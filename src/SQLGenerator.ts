@@ -9,6 +9,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const system_prompt = `
+Using valid SQLite, answer the following questions for the tables provided above.
+
+EXAMPLE JSON OUTPUT:
+{
+  "sql": "SELECT * FROM table_name WHERE column_name = 'value';",
+}
+`
+
 export class SQLGenerator {
   private openai: OpenAI;
   private engine: string;
@@ -17,7 +26,7 @@ export class SQLGenerator {
     this.openai = new OpenAI({
       baseURL: 'https://api.deepseek.com',
       apiKey: process.env.API_KEY
-  });
+    });
 
     this.engine = config.engine;
   }
@@ -142,9 +151,12 @@ export class SQLGenerator {
       exponentialBackoff.on('ready', async () => {
         try {
           const completion = await this.openai.chat.completions.create({
-            messages: [{ role: "system", content: "你好" }],
+            messages: [{ role: 'system', content: system_prompt }, { role: "user", content: prompt }],
             model: this.engine,
-            temperature: 0
+            temperature: 0,
+            response_format: {
+              'type': 'json_object'
+            }
           });
           resolve(completion.choices[0].message.content);
           exponentialBackoff.reset();
@@ -184,8 +196,10 @@ export class SQLGenerator {
 
       try {
         const result = await this.connectGPT(prompt);
-        const sql = 'SELECT' + result.choices[0].text;
+        // const sql = 'SELECT' + result;
+        const sql = JSON.parse(result).sql;
         const dbId = path.basename(dbPathList[i], '.sqlite');
+        console.log(`the sql is: ${sql}`);
         responseList.push(`${sql}\t----- bird -----\t${dbId}`);
       } catch (error) {
         if (error instanceof Error) {

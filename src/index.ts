@@ -19,6 +19,13 @@ async function main(): Promise<void> {
 
   const args = parser.parse_args() as CommandLineArgs;
 
+  console.log(`Starting SQL generation for ${args.mode} evaluation; `)
+  console.log(`Use knowledge: ${args.use_knowledge}; Use COT: ${args.chain_of_thought}`);
+  console.log(`Engine: ${args.engine}`);
+  console.log(`Output path: ${args.data_output_path}`);
+  console.log(`DB root path: ${args.db_root_path}`);
+  console.log(`Eval path: ${args.eval_path}`);
+
   const generator = new SQLGenerator({
     engine: args.engine
   });
